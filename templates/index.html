@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Multiplayer Chess</title>
+  <style>
+    #board { font-family: monospace; white-space: pre; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Multiplayer Chess</h1>
+
+  <button onclick="createGame()">Create Game</button>
+  <input id="gameId" placeholder="Game ID">
+  <button onclick="loadBoard()">Join Game</button>
+
+  <div id="board"></div>
+
+  <input id="moveInput" placeholder="e2e4">
+  <button onclick="sendMove()">Play Move</button>
+  <button onclick="randomMove()">Random Move</button>
+
+<script>
+let gameId = null;
+
+async function createGame() {
+  const res = await fetch("/create_game");
+  const data = await res.json();
+  gameId = data.game_id;
+  document.getElementById("gameId").value = gameId;
+  loadBoard();
+}
+
+async function loadBoard() {
+  gameId = document.getElementById("gameId").value;
+  const res = await fetch(`/get_board/${gameId}`);
+  const data = await res.json();
+  document.getElementById("board").textContent = data.fen;
+}
+
+async function sendMove() {
+  const move = document.getElementById("moveInput").value;
+  await fetch(`/move/${gameId}`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({move})
+  });
+  loadBoard();
+}
+
+async function randomMove() {
+  await fetch(`/random_move/${gameId}`, {method: "POST"});
+  loadBoard();
+}
+</script>
+</body>
+</html>
