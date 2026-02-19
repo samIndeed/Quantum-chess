@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+    <title>Multiplayer Chess</title>
+    <style>
+        body { font-family: sans-serif; }
+        table { border-collapse: collapse; }
+        td {
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            font-size: 36px;
+        }
+        .white { background: #eee; }
+        .black { background: #769656; }
+    </style>
+</head>
+<body>
+
+<h2>Game {{ game_id }}</h2>
+<p>You are: <b>{{ player }}</b></p>
+<p>Turn: <b>{{ turn }}</b></p>
+
+<table>
+{% for rank in range(7, -1, -1) %}
+<tr>
+    {% for file in range(8) %}
+        {% set square = chess.square(file, rank) %}
+        {% set piece = board.piece_at(square) %}
+        <td class="{{ 'white' if (file + rank) % 2 == 0 else 'black' }}">
+            {{ piece.unicode_symbol() if piece else "" }}
+        </td>
+    {% endfor %}
+</tr>
+{% endfor %}
+</table>
+
+<h3>Make Move</h3>
+<form method="post" action="{{ url_for('move', game_id=game_id) }}">
+    <input name="move" placeholder="e2e4" />
+    <button type="submit">Move</button>
+</form>
+
+<form method="post" action="{{ url_for('random_move', game_id=game_id) }}">
+    <button type="submit">Play Random Move</button>
+</form>
+
+</body>
+</html>
