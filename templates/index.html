@@ -29,7 +29,7 @@ let gameId = null;
 async function createGame() {
   const res = await fetch("/create_game");
   const data = await res.json();
-  gameId = data.game_id;
+  const gameId = generateNewId(); 
   document.getElementById("gameId").value = gameId;
   joinGame();
 }
