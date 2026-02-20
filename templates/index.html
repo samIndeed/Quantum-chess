@@ -2,24 +2,28 @@
 <html>
 <head>
   <title>Multiplayer Chess</title>
-  <style>
-    #board { font-family: monospace; white-space: pre; font-size: 18px; }
-  </style>
+
+  <!-- Chessboard.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>
+
+  <!-- Chess.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
 </head>
+
 <body>
-  <h1>Multiplayer Chess</h1>
+<h2>Multiplayer Chess</h2>
 
-  <button onclick="createGame()">Create Game</button>
-  <input id="gameId" placeholder="Game ID">
-  <button onclick="loadBoard()">Join Game</button>
+<button onclick="createGame()">Create Game</button>
+<input id="gameId" placeholder="Game ID">
+<button onclick="joinGame()">Join</button>
+<button onclick="randomMove()">Random Move</button>
 
-  <div id="board"></div>
-
-  <input id="moveInput" placeholder="e2e4">
-  <button onclick="sendMove()">Play Move</button>
-  <button onclick="randomMove()">Random Move</button>
+<div id="board" style="width: 400px"></div>
 
 <script>
+let board = null;
+let game = new Chess();
 let gameId = null;
 
 async function createGame() {
@@ -27,30 +31,59 @@ async function createGame() {
   const data = await res.json();
   gameId = data.game_id;
   document.getElementById("gameId").value = gameId;
-  loadBoard();
+  joinGame();
 }
 
-async function loadBoard() {
+async function joinGame() {
   gameId = document.getElementById("gameId").value;
-  const res = await fetch(`/get_board/${gameId}`);
+  const res = await fetch(`/get_fen/${gameId}`);
   const data = await res.json();
-  document.getElementById("board").textContent = data.fen;
+  game.load(data.fen);
+  board.position(data.fen);
 }
 
-async function sendMove() {
-  const move = document.getElementById("moveInput").value;
+function onDragStart(source, piece) {
+  if (game.game_over()) return false;
+  if ((game.turn() === 'w' && piece.startsWith('b')) ||
+      (game.turn() === 'b' && piece.startsWith('w'))) {
+    return false;
+  }
+}
+
+async function onDrop(source, target) {
+  const move = game.move({from: source, to: target, promotion: 'q'});
+  if (move === null) return 'snapback';
+
   await fetch(`/move/${gameId}`, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({move})
+    body: JSON.stringify({move: source + target})
   });
-  loadBoard();
+
+  syncBoard();
+}
+
+async function syncBoard() {
+  const res = await fetch(`/get_fen/${gameId}`);
+  const data = await res.json();
+  game.load(data.fen);
+  board.position(data.fen);
 }
 
 async function randomMove() {
-  await fetch(`/random_move/${gameId}`, {method: "POST"});
-  loadBoard();
+  await fetch(`/random/${gameId}`, {method: "POST"});
+  syncBoard();
 }
+
+board = Chessboard('board', {
+  draggable: true,
+  position: 'start',
+  onDragStart: onDragStart,
+  onDrop: onDrop
+});
+
+// Poll for opponent moves every 2s
+setInterval(syncBoard, 2000);
 </script>
 </body>
 </html>
