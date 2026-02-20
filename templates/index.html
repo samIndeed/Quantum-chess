@@ -27,12 +27,26 @@ let game = new Chess();
 let gameId = null;
 
 async function createGame() {
-  const res = await fetch("/create_game");
-  const data = await res.json();
-  const gameId = generateNewId(); 
-  document.getElementById("gameId").value = gameId;
-  joinGame();
+  try {
+    console.log("Creating game...");
+    const res = await fetch("/create_game");
+    console.log("HTTP status:", res.status);
+
+    const text = await res.text(); // DEBUG: read raw response
+    console.log("Raw response:", text);
+
+    const data = JSON.parse(text);
+    console.log("Parsed JSON:", data);
+
+    gameId = data.game_id;
+    document.getElementById("gameId").value = gameId;
+    joinGame();
+
+  } catch (err) {
+    console.error("Create game failed:", err);
+  }
 }
+
 
 async function joinGame() {
   gameId = document.getElementById("gameId").value;
